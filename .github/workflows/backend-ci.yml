@@ -1,0 +1,62 @@
+
+name: Backend CI
+
+on:
+  push:
+    branches: [main, dev, feature/jwt-auth]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: task_tracker_test
+          POSTGRES_USER: task_admin
+          POSTGRES_PASSWORD: task_password_2026
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U task_admin -d task_tracker_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql+psycopg://task_admin:task_password_2026@localhost:5432/task_tracker_test
+      SECRET_KEY: github-actions-test-secret-key
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Ruff
+        run: python -m ruff check .
+
+      - name: Run database migrations
+        run: alembic upgrade head
+
+      - name: Run backend tests
+        run: pytest -v
