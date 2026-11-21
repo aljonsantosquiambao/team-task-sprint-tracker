@@ -1,12 +1,11 @@
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import jwt
 from pwdlib import PasswordHash
 
 from app.core.config import settings
-
 
 # Initialize Argon2 password hashing
 password_hash = PasswordHash.recommended()
@@ -31,14 +30,14 @@ def verify_password(
 def create_access_token(user_id: UUID) -> str:
     """Generate a signed JWT access token."""
 
-    expires_at = datetime.now(timezone.utc) + timedelta(
+    expires_at = datetime.now(UTC) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
     payload = {
         "sub": str(user_id),
         "exp": expires_at,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
     }
 
     token = jwt.encode(

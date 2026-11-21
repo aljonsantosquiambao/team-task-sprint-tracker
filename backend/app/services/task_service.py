@@ -70,15 +70,16 @@ def get_task(
             detail="Task not found",
         )
 
-    if current_user and current_user.role != UserRole.ADMIN:
-        if (
-            task.created_by != current_user.id
-            and task.assignee_id != current_user.id
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to this task",
-            )
+    if (
+        current_user
+        and current_user.role != UserRole.ADMIN
+        and task.created_by != current_user.id
+        and task.assignee_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this task",
+        )
 
     return task
 

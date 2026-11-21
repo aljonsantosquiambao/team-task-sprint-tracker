@@ -1,12 +1,13 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
-from uuid import UUID
-from app.api.deps import get_current_user, require_admin
 
-from app.core.security import decode_access_token
+from app.api.deps import (
+    get_current_user as get_authenticated_user,
+)
+from app.api.deps import (
+    require_admin,
+)
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse
@@ -16,10 +17,7 @@ from app.services.auth_service import (
     register_user,
 )
 
-
 router = APIRouter()
-
-bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @router.post(
@@ -81,40 +79,10 @@ def login(
     "/me",
     response_model=UserResponse,
 )
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(
-        bearer_scheme
-    ),
-    db: Session = Depends(get_db),
+def get_me(
+    current_user: User = Depends(get_authenticated_user),
 ):
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        payload = decode_access_token(credentials.credentials)
-        user_id = UUID(payload["sub"])
-
-    except (InvalidTokenError, ValueError, KeyError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.get(User, user_id)
-
-    if user is None or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account not found or inactive",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user
+    return current_user
 
 
 @router.get("/admin-check")
@@ -133,7 +101,7 @@ def admin_check(
 
 @router.get("/member-check")
 def member_check(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_authenticated_user),
 ):
     return {
         "success": True,
@@ -143,4 +111,3 @@ def member_check(
             "role": current_user.role.value,
         },
     }
-

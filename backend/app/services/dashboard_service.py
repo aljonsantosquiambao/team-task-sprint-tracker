@@ -1,5 +1,5 @@
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ def get_dashboard_summary(
             | (Task.assignee_id == current_user.id)
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     total_tasks = db.scalar(
         select(func.count()).select_from(query.subquery())

@@ -7,7 +7,6 @@ from app.db.database import get_db
 from app.models.user import User
 from app.services.dashboard_service import get_dashboard_summary
 
-
 router = APIRouter()
 
 

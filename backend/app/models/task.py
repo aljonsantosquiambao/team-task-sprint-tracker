@@ -1,11 +1,17 @@
+from __future__ import annotations
+
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class TaskStatus(str, enum.Enum):
@@ -55,7 +61,6 @@ class Task(Base):
     due_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
-        index=True,
     )
 
     assignee_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -67,27 +72,28 @@ class Task(Base):
     created_by: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
+        index=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    creator: Mapped["User"] = relationship(
+    creator: Mapped[User] = relationship(
         back_populates="created_tasks",
         foreign_keys=[created_by],
     )
 
-    assignee: Mapped["User | None"] = relationship(
+    assignee: Mapped[User | None] = relationship(
         back_populates="assigned_tasks",
         foreign_keys=[assignee_id],
     )

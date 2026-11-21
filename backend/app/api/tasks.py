@@ -2,14 +2,14 @@
 from math import ceil
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_admin
 from app.db.database import get_db
 from app.models.task import TaskPriority, TaskStatus
-from app.models.user import User, UserRole
-from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
+from app.models.user import User
+from app.schemas.task import TaskCreate, TaskResponse, TaskUpdate
 from app.services.task_service import (
     create_task,
     delete_task,
@@ -17,7 +17,6 @@ from app.services.task_service import (
     list_tasks,
     update_task,
 )
-
 
 router = APIRouter()
 

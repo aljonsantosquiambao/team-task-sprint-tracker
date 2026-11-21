@@ -10,7 +10,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import settings
 from app.db.database import Base
-from app.models import User, Task
+from app.models import Task, User  # noqa: F401
 
 # Alembic configuration
 config = context.config

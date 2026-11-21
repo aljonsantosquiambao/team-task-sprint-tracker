@@ -8,7 +8,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.db.database import SessionLocal
 from app.models.user import User, UserRole
 
-
 ADMIN_EMAIL = "admin.test@example.com"
 
 
