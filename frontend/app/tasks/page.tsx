@@ -114,10 +114,52 @@ export default function TasksPage() {
   }, [isLoading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadTasks();
+    if (!isAuthenticated) return;
+
+    let cancelled = false;
+
+    async function fetchTasks() {
+      try {
+        setIsLoadingTasks(true);
+        setError("");
+
+        const result = await taskService.getTasks({
+          page,
+          limit: PAGE_SIZE,
+          search: search.trim() || undefined,
+          status: (statusFilter || undefined) as TaskStatus | undefined,
+          priority: (priorityFilter || undefined) as TaskPriority | undefined,
+          assignee_id: (assigneeFilter || undefined) as string | undefined,
+        });
+
+        if (!cancelled) {
+          setTasks(result.tasks);
+          setMeta(result.meta);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Unable to retrieve tasks. Please try again.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingTasks(false);
+        }
+      }
     }
-  }, [isAuthenticated, loadTasks]);
+
+    void fetchTasks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    page,
+    search,
+    statusFilter,
+    priorityFilter,
+    assigneeFilter,
+  ]);
 
   function handleLogout() {
     logout();
@@ -274,7 +316,7 @@ export default function TasksPage() {
             <p className="text-sm text-slate-500">Workspace / Tasks</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">Tasks</h1>
             <p className="mt-2 text-sm text-slate-500">
-              Manage and track your team's work.
+              Manage and track your team&apos;s work.
             </p>
           </div>
 
@@ -513,7 +555,7 @@ export default function TasksPage() {
                     Create New Task
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Add a task to your team's workspace.
+                    Add a task to your team&apos;s workspace.
                   </p>
                 </div>
 

@@ -37,6 +37,7 @@ export default function UsersPage() {
     }
   }, []);
 
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/");
@@ -50,10 +51,26 @@ export default function UsersPage() {
   }, [isLoading, isAuthenticated, user, router]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.role === "ADMIN") {
-      loadMembers();
+    if (!isAuthenticated || user?.role !== "ADMIN") {
+      return;
     }
-  }, [isAuthenticated, user, loadMembers]);
+
+    let cancelled = false;
+
+    const loadUsers = async () => {
+      await Promise.resolve();
+
+      if (!cancelled) {
+        await loadMembers();
+      }
+    };
+
+    void loadUsers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.role, loadMembers]);
 
   function handleLogout() {
     logout();

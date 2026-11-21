@@ -8,9 +8,10 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_DIR))
 
 # Force automated tests to use the dedicated test database.
-os.environ["DATABASE_URL"] = (
+os.environ.setdefault(
+    "DATABASE_URL",
     "postgresql+psycopg://task_admin:task_password_2026"
-    "@localhost:5433/task_tracker_test"
+    "@localhost:5433/task_tracker_test",
 )
 
 import pytest

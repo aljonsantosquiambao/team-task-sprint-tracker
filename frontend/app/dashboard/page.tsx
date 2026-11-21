@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ResponsiveContainer,
@@ -37,9 +38,83 @@ export default function DashboardPage() {
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [isLoadingRecentTasks, setIsLoadingRecentTasks] = useState(true);
 
-  const loadSummary = useCallback(async () => {
+  // Redirect unauthenticated users.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  // Load dashboard statistics.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let cancelled = false;
+
+    async function fetchSummary() {
+      try {
+        const data = await dashboardService.getSummary();
+
+        if (!cancelled) {
+          setSummary(data);
+          setError("");
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Unable to load dashboard statistics.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingSummary(false);
+        }
+      }
+    }
+
+    void fetchSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  // Load recent tasks.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let cancelled = false;
+
+    async function fetchRecentTasks() {
+      try {
+        const result = await taskService.getTasks({
+          page: 1,
+          limit: 5,
+        });
+
+        if (!cancelled) {
+          setRecentTasks(result.tasks);
+        }
+      } catch (error) {
+        console.error("Recent Tasks API error:", error);
+      } finally {
+        if (!cancelled) {
+          setIsLoadingRecentTasks(false);
+        }
+      }
+    }
+
+    void fetchRecentTasks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  // Retry loading dashboard statistics.
+  async function handleRetrySummary() {
+    setIsLoadingSummary(true);
+    setError("");
+
     try {
-      setError("");
       const data = await dashboardService.getSummary();
       setSummary(data);
     } catch {
@@ -47,40 +122,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoadingSummary(false);
     }
-  }, []);
-
-  const loadRecentTasks = useCallback(async () => {
-    try {
-      const result = await taskService.getTasks({
-        page: 1,
-        limit: 5,
-      });
-
-      setRecentTasks(result.tasks);
-    } catch (error) {
-      console.error("Recent Tasks API error:", error);
-    } finally {
-      setIsLoadingRecentTasks(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace("/");
-    }
-  }, [isLoading, isAuthenticated, router]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadSummary();
-    }
-  }, [isAuthenticated, loadSummary]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadRecentTasks();
-    }
-  }, [isAuthenticated, loadRecentTasks]);
+  }
 
   function handleLogout() {
     logout();
@@ -160,6 +202,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-slate-200 bg-white p-6 lg:block">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-blue-600 p-2 text-white">
@@ -209,6 +252,7 @@ export default function DashboardPage() {
         </button>
       </aside>
 
+      {/* Main Content */}
       <main className="p-6 lg:ml-64 lg:p-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -229,11 +273,13 @@ export default function DashboardPage() {
           </div>
         </header>
 
+        {/* Dashboard Error */}
         {error && (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
             <button
-              onClick={loadSummary}
+              type="button"
+              onClick={handleRetrySummary}
               className="ml-2 font-semibold underline"
             >
               Retry
@@ -241,6 +287,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Statistics Cards */}
         <section className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat) => {
             const Icon = stat.icon;
@@ -267,6 +314,7 @@ export default function DashboardPage() {
           })}
         </section>
 
+        {/* Charts */}
         <section className="mt-8 grid gap-6 xl:grid-cols-2">
           {/* Task Status Chart */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -347,6 +395,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {/* Recent Tasks */}
         <section className="mt-8 rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-6">
             <div>
@@ -359,6 +408,7 @@ export default function DashboardPage() {
             </div>
 
             <button
+              type="button"
               onClick={() => router.push("/tasks")}
               className="text-sm font-semibold text-blue-600 hover:text-blue-700"
             >
